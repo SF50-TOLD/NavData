@@ -13,7 +13,7 @@ import Foundation
  * - `{type: "initialFix"}`
  */
 public struct LegTypeCodable: Codable, Sendable {
-  /// Discriminator string matching a ``LegType`` case name.
+  /// Discriminator string matching a `LegType` case name.
   public let type: LegTypeDiscriminator
 
   /// Magnetic course or heading in degrees (nil for fix-only types).
@@ -38,7 +38,7 @@ public struct LegTypeCodable: Codable, Sendable {
   }
 
   // swiftlint:disable redundant_string_enum_value
-  /// Discriminator values matching ``LegType`` case names.
+  /// Discriminator values matching `LegType` case names.
   public enum LegTypeDiscriminator: String, Codable, Sendable {
     case initialFix = "initialFix"
     case trackToFix = "trackToFix"
