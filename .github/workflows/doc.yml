@@ -17,12 +17,12 @@ concurrency:
 jobs:
   build:
     name: Generate Documentation
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: "6.2"
+          swift-version: "6.3"
       - name: Cache SwiftPM build products
         uses: actions/cache@v6
         with:
@@ -30,7 +30,7 @@ jobs:
             .build
             ~/.cache/org.swift.swiftpm
             ~/Library/Caches/org.swift.swiftpm
-          key: swiftpm-doc-deploy-macos-latest-swift6.2-${{ hashFiles('Package.resolved') }}
+          key: swiftpm-doc-deploy-macos-26-swift6.3-${{ hashFiles('Package.resolved') }}
       - name: Build
         run: |
           swift package \

@@ -8,7 +8,7 @@
  identifying the U.S. Government material incorporated and stating
  that such material is not subject to copyright protection.*/
 
-import Foundation
+public import Foundation
 
 // Add vars to convert to degrees/radians
 extension FloatingPoint {
