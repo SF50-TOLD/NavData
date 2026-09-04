@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Codable container for the airport database distributed with the app.
 ///
@@ -232,7 +232,7 @@ public struct AirportDataCodable: Codable, Sendable {
       self.displacedThresholdDistance = displacedThresholdDistance
     }
 
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       name = try container.decode(String.self, forKey: .name)
       elevation = try container.decodeIfPresent(Double.self, forKey: .elevation)
@@ -265,7 +265,7 @@ public struct AirportDataCodable: Codable, Sendable {
       }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(name, forKey: .name)
       try container.encodeIfPresent(elevation, forKey: .elevation)
@@ -433,7 +433,7 @@ public struct AirportDataCodable: Codable, Sendable {
     case atOrBelow(Int)
     case between(min: Int, max: Int)
 
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
 
       if let value = try container.decodeIfPresent(Int.self, forKey: .at) {
@@ -456,7 +456,7 @@ public struct AirportDataCodable: Codable, Sendable {
       }
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
 
       switch self {

@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - os: macos-26
-            swift: "6.2"
+            swift: "6.3"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -39,7 +39,7 @@ jobs:
     name: Build on Linux
     runs-on: ubuntu-latest
     container:
-      image: swift:6.2
+      image: swift:6.3
     steps:
       - uses: actions/checkout@v6
       - name: Cache SwiftPM build products
@@ -49,17 +49,17 @@ jobs:
             .build
             ~/.cache/org.swift.swiftpm
             ~/Library/Caches/org.swift.swiftpm
-          key: swiftpm-build-linux-ubuntu-latest-swift6.2-${{ hashFiles('Package.resolved') }}
+          key: swiftpm-build-linux-ubuntu-latest-swift6.3-${{ hashFiles('Package.resolved') }}
       - name: Build
         run: swift build -v
   documentation:
     name: Build Documentation
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: "6.2"
+          swift-version: "6.3"
       - name: Cache SwiftPM build products
         uses: actions/cache@v6
         with:
@@ -67,7 +67,7 @@ jobs:
             .build
             ~/.cache/org.swift.swiftpm
             ~/Library/Caches/org.swift.swiftpm
-          key: swiftpm-docs-macos-latest-swift6.2-${{ hashFiles('Package.resolved') }}
+          key: swiftpm-docs-macos-26-swift6.3-${{ hashFiles('Package.resolved') }}
       - name: Build documentation
         run: |
           swift package \
@@ -76,7 +76,7 @@ jobs:
            --warnings-as-errors
   lint:
     name: Run SwiftLint
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - name: Install SwiftLint
