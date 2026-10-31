@@ -81,4 +81,36 @@ public enum GeoCalculations {
 
     return earthRadiusNM * c
   }
+
+  /// Calculates the point reached by travelling a distance along a great circle.
+  /// - Parameters:
+  ///   - latitudeDeg: Origin latitude in decimal degrees
+  ///   - longitudeDeg: Origin longitude in decimal degrees
+  ///   - bearingDeg: Initial true bearing in degrees
+  ///   - distanceM: Distance to travel in meters
+  /// - Returns: Destination latitude and longitude in decimal degrees
+  public static func destination(
+    latitudeDeg: Double,
+    longitudeDeg: Double,
+    bearingDeg: Double,
+    distanceM: Double
+  ) -> (latitudeDeg: Double, longitudeDeg: Double) {
+    let lat1 = latitudeDeg * .pi / 180,
+      lon1 = longitudeDeg * .pi / 180,
+      bearing = bearingDeg * .pi / 180,
+      angularDistance = distanceM / earthRadiusM
+
+    let lat2 = asin(
+      sin(lat1) * cos(angularDistance) + cos(lat1) * sin(angularDistance) * cos(bearing)
+    )
+    let lon2 =
+      lon1
+      + atan2(
+        sin(bearing) * sin(angularDistance) * cos(lat1),
+        cos(angularDistance) - sin(lat1) * sin(lat2)
+      )
+    let longitudeDeg = (lon2 * 180 / .pi + 540).truncatingRemainder(dividingBy: 360) - 180
+
+    return (lat2 * 180 / .pi, longitudeDeg)
+  }
 }

@@ -13,6 +13,7 @@ generator can build it in CI.
 - **`AirportDataCodable`** — the top-level container (airports, runways, procedures, navaids,
   obstacles, and per-source cycle metadata), plus its nested `Codable` types.
 - **`SurfaceType`** — runway surface classification.
+- **`AirportDataSource`** — the sources that contribute airport data.
 - **`AnyCycle`** — common interface for FAA publication cycles.
 - **`Geomagnetism`** — WMM-based magnetic declination.
 - **`GeoCalculations`** — platform-independent bearing, distance, and magnetic-variation

@@ -3,14 +3,20 @@ public import Foundation
 /// Codable container for the airport database distributed with the app.
 ///
 /// ``AirportDataCodable`` represents the entire airport database in a format
-/// suitable for encoding to property list and LZMA compression. It combines
-/// data from FAA NASR and OurAirports sources.
+/// suitable for encoding to property list and LZMA compression.
 ///
 /// ## Data Sources
 ///
-/// The database merges two sources with NASR taking priority:
-/// - **NASR**: FAA National Airspace System Resources (US airports)
-/// - **OurAirports**: Community database (international airports)
+/// The generator resolves records from several sources into one record per airport,
+/// taking each value from the highest-priority source that has it:
+/// - **NASR**: FAA National Airspace System Resources (all US airports)
+/// - **National AIP data sets** (NATS, LFV): official data for their countries
+/// - **open flightmaps**: community data for Europe and southern Africa
+/// - **OurAirports**: community database (worldwide)
+///
+/// ``AirportCodable/sources`` lists the sources behind each airport, and
+/// ``supplementarySources`` describes every source beyond NASR, CIFP, DOF, and
+/// OurAirports, with the attribution each requires.
 ///
 /// ## File Format
 ///
@@ -34,11 +40,15 @@ public struct AirportDataCodable: Codable, Sendable {
   /// All airports in the database
   public let airports: [AirportCodable]
 
-  /// All obstacles in the database (from FAA Digital Obstacle File)
+  /// All obstacles in the database
   public let obstacles: [ObstacleCodable]
 
   /// DME-capable navaids referenced by procedure legs (nil for older data files)
   public let navaids: [NavaidCodable]?
+
+  /// Sources beyond NASR, CIFP, DOF, and OurAirports that contributed to this file (nil for
+  /// older data files)
+  public let supplementarySources: [SupplementarySource]?
 
   public init(
     cycles: DataCycles,
@@ -46,7 +56,8 @@ public struct AirportDataCodable: Codable, Sendable {
     ourAirportsLastUpdated: Date?,
     airports: [AirportCodable],
     obstacles: [ObstacleCodable],
-    navaids: [NavaidCodable]? = nil
+    navaids: [NavaidCodable]? = nil,
+    supplementarySources: [SupplementarySource]? = nil
   ) {
     self.cycles = cycles
     self.nasrCycle = nasrCycle
@@ -54,6 +65,7 @@ public struct AirportDataCodable: Codable, Sendable {
     self.airports = airports
     self.obstacles = obstacles
     self.navaids = navaids
+    self.supplementarySources = supplementarySources
   }
 
   /**
@@ -63,10 +75,21 @@ public struct AirportDataCodable: Codable, Sendable {
    * serialization and storage. All measurements use metric units (meters, degrees).
    */
   public struct AirportCodable: Codable, Sendable {
-    /// Unique database record identifier
+    /**
+     * Unique, stable airport identifier.
+     *
+     * A namespaced key taken from the most authoritative identifier the airport has:
+     * `FAA:<site number>`, `ICAO:<location indicator>`, `LOC:<country>:<national code>`,
+     * `OA:<OurAirports id>`, or `OFM:<region>:<code>`. Older data files hold a bare NASR site
+     * number or OurAirports id, which ``aliases`` maps to the current key.
+     */
     public let recordID: String
 
-    /// FAA location identifier (e.g., "SFO")
+    /// Every identifier this airport has had or is known by, in ``recordID`` form, plus the
+    /// bare identifiers older data files used as ``recordID`` (nil for older data files)
+    public let aliases: [String]?
+
+    /// National or FAA location identifier (e.g., "SFO")
     public let locationID: String
 
     /// ICAO identifier if available (e.g., "KSFO")
@@ -78,8 +101,16 @@ public struct AirportDataCodable: Codable, Sendable {
     /// City or municipality
     public let city: String?
 
-    /// Data source: "nasr" or "ourAirports"
+    /// The airport's primary source, spelled as an ``AirportDataSource`` raw value. App versions
+    /// that predate ``sources`` read only this; newer readers use ``sources``.
     public let dataSource: String
+
+    /// The sources that contributed to this airport, highest priority first (nil for older
+    /// data files)
+    public let sources: [AirportDataSource]?
+
+    /// ISO 3166-1 alpha-2 country code (nil for older data files)
+    public let countryCode: String?
 
     /// Latitude in decimal degrees
     public let latitude: Double
@@ -115,7 +146,10 @@ public struct AirportDataCodable: Codable, Sendable {
       variation: Double,
       timeZone: String?,
       runways: [RunwayCodable],
-      procedures: [ProcedureCodable]?
+      procedures: [ProcedureCodable]?,
+      aliases: [String]? = nil,
+      sources: [AirportDataSource]? = nil,
+      countryCode: String? = nil
     ) {
       self.recordID = recordID
       self.locationID = locationID
@@ -130,6 +164,9 @@ public struct AirportDataCodable: Codable, Sendable {
       self.timeZone = timeZone
       self.runways = runways
       self.procedures = procedures
+      self.aliases = aliases
+      self.sources = sources
+      self.countryCode = countryCode
     }
   }
 
@@ -544,9 +581,58 @@ public struct AirportDataCodable: Codable, Sendable {
   }
 
   /**
+   * A data source that contributed to the file, with the attribution its terms require.
+   *
+   * Apps show these alongside the cycle information for NASR, CIFP, and DOF.
+   */
+  public struct SupplementarySource: Codable, Sendable, Hashable {
+    /// The source's name as it should be credited (e.g., "open flightmaps")
+    public let name: String
+
+    /// The airport data source this is, for sources that contribute to airport records (nil for
+    /// sources of obstacles only)
+    public let source: AirportDataSource?
+
+    /// The edition used: an AIRAC cycle or publication date as the source labels it
+    public let edition: String
+
+    /// When the generator retrieved the data
+    public let retrieved: Date
+
+    /// The attribution statement the source's terms require
+    public let attribution: String
+
+    /// The source's terms of use
+    public let licenseURL: URL?
+
+    /// Where users report errors in the source's data, for sources that require apps to
+    /// offer one
+    public let feedbackURL: URL?
+
+    public init(
+      name: String,
+      source: AirportDataSource?,
+      edition: String,
+      retrieved: Date,
+      attribution: String,
+      licenseURL: URL?,
+      feedbackURL: URL?
+    ) {
+      self.name = name
+      self.source = source
+      self.edition = edition
+      self.retrieved = retrieved
+      self.attribution = attribution
+      self.licenseURL = licenseURL
+      self.feedbackURL = feedbackURL
+    }
+  }
+
+  /**
    * Codable representation of an obstacle.
    *
-   * ``ObstacleCodable`` stores obstacle data extracted from the FAA Digital Obstacle File.
+   * ``ObstacleCodable`` stores obstacle data from the FAA Digital Obstacle File and national
+   * obstacle data sets.
    * Only the fields needed for departure obstacle analysis are included to minimize file size.
    */
   public struct ObstacleCodable: Codable, Sendable {
