@@ -11,15 +11,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  route:
+    uses: RISCfuture/ci-workflows/.github/workflows/minerva-route.yml@1.1.0
+    permissions:
+      contents: read
   build:
     name: Build
+    needs: route
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-26
             swift: "6.3"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ (matrix.swift == '6.4' || matrix.swift == '6.4.2') && (matrix.os == 'macos-26' || matrix.os == 'macos-latest') && fromJSON(needs.route.outputs[matrix.os]) || matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: SwiftyLab/setup-swift@v1.14.2
@@ -54,7 +59,8 @@ jobs:
         run: swift build -v
   documentation:
     name: Build Documentation
-    runs-on: macos-26
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.macos-26) }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: SwiftyLab/setup-swift@v1.14.2
@@ -76,7 +82,8 @@ jobs:
            --warnings-as-errors
   lint:
     name: Run SwiftLint
-    runs-on: macos-26
+    needs: route
+    runs-on: ${{ fromJSON(needs.route.outputs.macos-26) }}
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Install SwiftLint
